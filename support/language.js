@@ -35,13 +35,13 @@ export default {
     {
       name: 'contains',
       type: 'string'
+    }, {
+      name: 'matches',
+      type: 'regex'
     }],
     constraints: [{
       name: 'length',
       type: 'integer'
-    }, {
-      name: 'matches',
-      type: 'regex'
     }]
   }, {
     name: 'Email',

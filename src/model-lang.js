@@ -1,5 +1,5 @@
-import joi from 'joi';
 import { EOL } from 'os';
+import joi from './joi';
 import * as parser from './parser';
 import * as DATA_TYPES from './data-types';
 
@@ -38,7 +38,11 @@ function _compile(inputTypes) {
       properties: [],
       validator: joi.object().options({ abortEarly: false }),
       validate(value) {
-        return joi.validate(value, typeDescriptor.validator);
+        const res = joi.validate(value, typeDescriptor.validator);
+        return {
+          errors: res.error ? res.error.details : null,
+          value: res.value
+        };
       }
     };
 
@@ -153,7 +157,7 @@ export function compile(str) {
   }
 
   const parsedTypes = _parse(str);
-  parsedTypes.forEach(t => console.log(t));
+  // parsedTypes.forEach(t => console.log(t));
 
   const compiledTypes = _compile(parsedTypes);
   if (compiledTypes.violations.length > 0) {

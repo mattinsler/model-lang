@@ -29,12 +29,12 @@ StringRule
   = "required" _ v:Boolean { return { property: 'required', value: v } }
   / "default" _ v:String { return { property: 'default', value: v } }
   / "contains" _ v:String { return { property: 'contains', value: v } }
+  / "matches" _ v:RegularExpression { return { property: 'matches', value: v } }
   / "length" _ "==" _ v:Integer { return { constraint: 'length', type: 'equal', value: v } }
   / "length" _ "<" _ v:Integer { return { constraint: 'length', type: 'lt', value: v } }
   / "length" _ "<=" _ v:Integer { return { constraint: 'length', type: 'lte', value: v } }
   / "length" _ ">" _ v:Integer { return { constraint: 'length', type: 'gt', value: v } }
   / "length" _ ">=" _ v:Integer { return { constraint: 'length', type: 'gte', value: v } }
-  / "matches" _ v:RegularExpression { return { constraint: 'matches', type: 'regex', value: v } }
 EmailProperty 
   = id:Identifier _ "Email" _ "{" _ rules:EmailRules _ "}"  { return { name: id, dataType: 'Email', rules: rules } }
   / id:Identifier _ "Email" _ "{" _ "}"  { return { name: id, dataType: 'Email', rules: [] } }

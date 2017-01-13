@@ -1,26 +1,5 @@
-import Joi from 'joi';
 import util from 'util';
-
-const joi = Joi.extend({
-  name: 'string',
-  base: Joi.string(),
-  language: {
-    contains: 'needs to contain {{q}}'
-  },
-  rules: [{
-    name: 'contains',
-    params: {
-      q: Joi.string().required()
-    },
-    validate(params, value, state, options) {
-      if (value.indexOf(params.q) === -1) {
-        return this.createError('string.contains', value, state, options);
-      }
-
-      return value;
-    }
-  }]
-});
+import joi from './joi';
 
 export const Boolean = {
   type: 'boolean',
@@ -49,8 +28,10 @@ export const String = {
           break;
       }
     } else if (property) {
+      console.log('string', property, value);
       switch (property) {
         case 'contains': return validator.contains(value);
+        case 'matches': return validator.regex(value);
       }
     }
 

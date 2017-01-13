@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import peg from 'pegjs';
 import language from './language';
 import buildLanguage from './build-language';
@@ -17,4 +18,4 @@ const parser = peg.generate(lang, {
   trace: false
 });
 
-fs.writeFileSync('parser.js', parser);
+fs.writeFileSync(path.join(__dirname, '..', 'src', 'parser.js'), parser);
