@@ -1,16 +1,21 @@
 {
   "name": "model-lang",
-  "version": "0.0.1",
-  "description": "",
+  "version": "0.0.2",
+  "description": "A modeling and validation language usable in the node.js and the browser",
+  "keywords": ["model", "validation"],
+  "homepage": "https://github.com/mattinsler/model-lang",
+  "bugs": {
+    "url": "https://github.com/mattinsler/model-lang/issues"
+  },
+  "license": "MIT",
+  "author": "Matt Insler <matt.insler@gmail.com>",
+  "repository": "mattinsler/model-lang",
   "main": "lib/model-lang.js",
   "scripts": {
     "build-parser": "babel-node support/generate-parser",
     "build": "npm run build-parser; rm -rf lib; babel src -d lib",
     "prepublish": "npm run build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "joi": "10.1.0"
   },
