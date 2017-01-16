@@ -1,6 +1,6 @@
 # model-lang
 
-A modeling and validation language.
+A modeling and validation language usable in the node.js and the browser.
 
 The basic idea is to have a clean and descriptive language to specify models for things like
 microservices interfaces, forms validation ([react-model-forms](https://github.com/mattinsler/react-model-forms)), and more.
