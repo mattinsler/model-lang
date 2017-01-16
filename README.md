@@ -100,7 +100,6 @@ you can just use
 ```js
 username String
 password String
-}
 ```
 
 ## API
