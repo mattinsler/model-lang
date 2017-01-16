@@ -11,15 +11,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "joi": "^10.1.0"
+    "joi": "10.1.0"
   },
   "devDependencies": {
     "babel-cli": " 6.18.0",
-    "babel-core": "^6.21.0",
+    "babel-core": "6.21.0",
     "babel-plugin-transform-runtime": " 6.15.0",
-    "babel-preset-es2015": "^6.18.0",
-    "babel-preset-stage-0": "^6.16.0",
+    "babel-preset-es2015": "6.18.0",
+    "babel-preset-stage-0": "6.16.0",
     "joi-browser": " 10.0.6",
-    "pegjs": "^0.10.0"
+    "pegjs": "0.10.0"
   }
 }

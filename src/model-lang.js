@@ -35,13 +35,57 @@ function _compile(inputTypes) {
 
     const typeDescriptor = {
       name: type,
-      properties: [],
-      validator: joi.object().options({ abortEarly: false }),
-      validate(value) {
-        const res = joi.validate(value, typeDescriptor.validator);
+      properties: {},
+      validate(originalValue = {}) {
+        const errors = [];
+        const finishedValue = {};
+
+        for (let prop of Object.values(typeDescriptor.properties)) {
+          finishedValue[prop.name] = originalValue[prop.name];
+
+          // if no value, then set to default and don't validate
+          if (finishedValue[prop.name] === undefined && prop.defaultValue !== undefined) {
+            finishedValue[prop.name] = prop.defaultValue;
+            continue;
+          }
+          // yea, this is pretty clear
+          if (finishedValue[prop.name] === undefined && prop.isRequired) {
+            errors.push({
+              type,
+              property: prop.name,
+              message: `"${prop.name}" is required`
+            });
+            continue;
+          }
+
+          const { error, value } = prop.validator.validate(finishedValue[prop.name]);
+          if (error) {
+            // done with this property since the root prop validator is a type validator
+            errors.push({
+              type,
+              property: prop.name,
+              message: error.message
+            });
+          }
+          finishedValue[prop.name] = value;
+
+          for (let rule of prop.rules) {
+            const { error, value } = rule.validator.validate(finishedValue[prop.name]);
+            if (error) {
+              errors.push({
+                type,
+                property: prop.name,
+                message: error.message
+              });
+            } else {
+              finishedValue[prop.name] = value;
+            }
+          }
+        }
+
         return {
-          errors: res.error ? res.error.details : null,
-          value: res.value
+          errors,
+          value: finishedValue
         };
       }
     };
@@ -59,12 +103,15 @@ function _compile(inputTypes) {
         const propDescriptor = {
           name: prop.name,
           type: prop.dataType,
-          dataType: dataType.type,
           isRequired: false,
           defaultValue: undefined,
           rules: [],
           validator: dataType.validator()
         };
+
+        Object.defineProperty(propDescriptor, 'validator', {
+          enumerable: false
+        });
 
         for (let rule of prop.rules) {
           if (rule.property === 'default') {
@@ -72,32 +119,31 @@ function _compile(inputTypes) {
           } else if (rule.property === 'required') {
             propDescriptor.isRequired = rule.value;
           } else {
-            propDescriptor.rules.push(rule);
-            if (dataType.addRule) {
-              propDescriptor.validator = dataType.addRule(propDescriptor.validator, rule);
+            if (dataType.getRuleValidator) {
+              Object.defineProperty(rule, 'validator', {
+                enumerable: false,
+                value: dataType.getRuleValidator(rule)
+              });
+            } else {
+              console.log('Data type not implemented:', prop.dataType);
             }
+
+            propDescriptor.rules.push(rule);
           }
         }
 
-        if (propDescriptor.isRequired) {
-          propDescriptor.validator = propDescriptor.validator.required();
-        }
-        if (propDescriptor.defaultValue !== undefined) {
-          propDescriptor.validator = propDescriptor.validator.default(propDescriptor.defaultValue);
-        }
-
-        typeDescriptor.properties.push(propDescriptor);
+        typeDescriptor.properties[prop.name] = propDescriptor;
       }
     }
 
-    typeDescriptor.validator = typeDescriptor.validator.keys(
-      typeDescriptor.properties.reduce((o, { name, validator }) => {
-        o[name] = validator;
-        return o;
-      }, {})
-    );
-
     types.push(typeDescriptor);
+  }
+
+  // check for anonymous types when more than 1 type specified
+  if (types.length > 1 && types.find(t => t.name === '')) {
+    violations.push({
+      message: 'Anonymous types are not allowed when there are more than 1 type specified'
+    });
   }
 
   return {
@@ -151,13 +197,12 @@ function buildError(violations) {
   return err;
 }
 
-export function compile(str) {
+function compile(str) {
   if (Array.isArray(str)) {
     str = str.join(' ');
   }
 
   const parsedTypes = _parse(str);
-  // parsedTypes.forEach(t => console.log(t));
 
   const compiledTypes = _compile(parsedTypes);
   if (compiledTypes.violations.length > 0) {
@@ -172,6 +217,13 @@ export function compile(str) {
   return linkedTypes.types;
 }
 
-export function model(str) {
+function model(str) {
   return compile(str)[0];
 }
+
+const mdl = {
+  compile,
+  model
+};
+
+export default mdl;

@@ -1,48 +1,46 @@
 
-Document = _ head:Type tail:(_ next:Type { return next })* _ { return [head].concat(tail) }
+Document = _ head:Type tail:(_ next:Type { return next })* _ { return [head].concat(tail).reduce((a, b) => a.concat(b), []) }
 
 Type
   = "type" _ id:Identifier _ "{" _ properties:Properties _ "}" { return { type: id, properties: properties } }
   / properties:Properties { return { type: '', properties: properties } }
 
-Properties = _ head:Property tail:(_ next:Property { return next })* _ { return [head].concat(tail) }
+Properties = _ head:Property tail:(_ next:Property { return next })* _ { return [head].concat(tail).reduce((a, b) => a.concat(b), []) }
 
 Property 
   = BooleanProperty
   / StringProperty
   / EmailProperty
 
+BooleanRules = _ head:BooleanRule tail:(_ next:BooleanRule { return next })* _ { return [head].concat(tail).reduce((a, b) => a.concat(b), []) }
+BooleanRule 
+  = "required" _ v:Boolean { return { property: 'required', value: v } }
+  / "default" _ v:Boolean { return { property: 'default', value: v } }
 BooleanProperty 
   = id:Identifier _ "Boolean" _ "{" _ rules:BooleanRules _ "}"  { return { name: id, dataType: 'Boolean', rules: rules } }
   / id:Identifier _ "Boolean" _ "{" _ "}"  { return { name: id, dataType: 'Boolean', rules: [] } }
   / id:Identifier _ "Boolean"  { return { name: id, dataType: 'Boolean', rules: [] } }
-BooleanRules = _ head:BooleanRule tail:(_ next:BooleanRule { return next })* _ { return [head].concat(tail) }
-BooleanRule 
+StringRules = _ head:StringRule tail:(_ next:StringRule { return next })* _ { return [head].concat(tail).reduce((a, b) => a.concat(b), []) }
+StringRule 
   = "required" _ v:Boolean { return { property: 'required', value: v } }
-  / "default" _ v:Boolean { return { property: 'default', value: v } }
+  / "default" _ v:String { return { property: 'default', value: v } }
+  / "contains" _ head:String tail:(_ "and" _ next:String { return { property: 'contains', value: next } })* _ { return [{ property: 'contains', value: head }].concat(tail).reduce((a, b) => a.concat(b), []) }
+  / "matches" _ head:RegularExpression tail:(_ "and" _ next:RegularExpression { return { property: 'matches', value: next } })* _ { return [{ property: 'matches', value: head }].concat(tail).reduce((a, b) => a.concat(b), []) }
+  / "length" _ heado:$("==" / "<=" / ">=" / "<" / ">") _ head:Integer tail:(_ "and" _ nexto:$("==" / "<=" / ">=" / "<" / ">") _ next:Integer { return { property: 'length', operation: nexto, value: next } })* _ { return [{ property: 'length', operation: heado, value: head }].concat(tail).reduce((a, b) => a.concat(b), []) }
 StringProperty 
   = id:Identifier _ "String" _ "{" _ rules:StringRules _ "}"  { return { name: id, dataType: 'String', rules: rules } }
   / id:Identifier _ "String" _ "{" _ "}"  { return { name: id, dataType: 'String', rules: [] } }
   / id:Identifier _ "String"  { return { name: id, dataType: 'String', rules: [] } }
-StringRules = _ head:StringRule tail:(_ next:StringRule { return next })* _ { return [head].concat(tail) }
-StringRule 
+EmailRules = _ head:EmailRule tail:(_ next:EmailRule { return next })* _ { return [head].concat(tail).reduce((a, b) => a.concat(b), []) }
+EmailRule 
   = "required" _ v:Boolean { return { property: 'required', value: v } }
   / "default" _ v:String { return { property: 'default', value: v } }
-  / "contains" _ v:String { return { property: 'contains', value: v } }
-  / "matches" _ v:RegularExpression { return { property: 'matches', value: v } }
-  / "length" _ "==" _ v:Integer { return { constraint: 'length', type: 'equal', value: v } }
-  / "length" _ "<" _ v:Integer { return { constraint: 'length', type: 'lt', value: v } }
-  / "length" _ "<=" _ v:Integer { return { constraint: 'length', type: 'lte', value: v } }
-  / "length" _ ">" _ v:Integer { return { constraint: 'length', type: 'gt', value: v } }
-  / "length" _ ">=" _ v:Integer { return { constraint: 'length', type: 'gte', value: v } }
+  / "contains" _ head:String tail:(_ "and" _ next:String { return { property: 'contains', value: next } })* _ { return [{ property: 'contains', value: head }].concat(tail).reduce((a, b) => a.concat(b), []) }
+  / "matches" _ head:RegularExpression tail:(_ "and" _ next:RegularExpression { return { property: 'matches', value: next } })* _ { return [{ property: 'matches', value: head }].concat(tail).reduce((a, b) => a.concat(b), []) }
 EmailProperty 
   = id:Identifier _ "Email" _ "{" _ rules:EmailRules _ "}"  { return { name: id, dataType: 'Email', rules: rules } }
   / id:Identifier _ "Email" _ "{" _ "}"  { return { name: id, dataType: 'Email', rules: [] } }
   / id:Identifier _ "Email"  { return { name: id, dataType: 'Email', rules: [] } }
-EmailRules = _ head:EmailRule tail:(_ next:EmailRule { return next })* _ { return [head].concat(tail) }
-EmailRule 
-  = "required" _ v:Boolean { return { property: 'required', value: v } }
-  / "default" _ v:String { return { property: 'default', value: v } }
 
 Identifier
   = [a-zA-Z][a-zA-Z0-9_]* { return text() }
@@ -53,6 +51,7 @@ Boolean
 
 String
   = '"' str:$[^"]* '"' { return str }
+  / "'" str:$[^']* "'" { return str }
 
 Integer
   = [0-9]+ { return parseInt(text(), 10) }

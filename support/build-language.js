@@ -2,55 +2,36 @@ import peg from 'pegjs';
 
 const generate = {
   recursive(name) {
-    return `= _ head:${name} tail:(_ next:${name} { return next })* _ { return [head].concat(tail) }`;
+    return `= _ head:${name} tail:(_ next:${name} { return next })* _ { return [head].concat(tail).reduce((a, b) => a.concat(b), []) }`;
   },
   rule(arr) {
     return '\n  = ' + arr.join('\n  / ');
   },
-  properties: {
-    boolean(name) {
-      return [
-        `"${name}" _ v:Boolean { return { property: '${name}', value: v } }`
-      ];
-    },
-    string(name) {
-      return [
-        `"${name}" _ v:String { return { property: '${name}', value: v } }`
-      ];
-    },
-    integer(name) {
-      return [
-        `"${name}" _ v:Integer { return { property: '${name}', value: v } }`
-      ];
-    },
-    regex(name) {
-      return [
-        `"${name}" _ v:RegularExpression { return { property: '${name}', value: v } }`
-      ];
-    }
-  },
-  constraints: {
-    // enum(name, values, parse) {
-    //   return values.map(v => `"${name}" _ "${v}" { return { property: '${name}', value: ${parse(v)} } }`);
-    // },
-    // string(name) {
-    //   return [
-    //     `"contains" _ v:String { return { type: 'contains', value: v } }`
-    //   ];
-    // },
-    integer(name) {
-      return [
-        `"${name}" _ "==" _ v:Integer { return { constraint: '${name}', type: 'equal', value: v } }`,
-        `"${name}" _ "<" _ v:Integer { return { constraint: '${name}', type: 'lt', value: v } }`,
-        `"${name}" _ "<=" _ v:Integer { return { constraint: '${name}', type: 'lte', value: v } }`,
-        `"${name}" _ ">" _ v:Integer { return { constraint: '${name}', type: 'gt', value: v } }`,
-        `"${name}" _ ">=" _ v:Integer { return { constraint: '${name}', type: 'gte', value: v } }`
-      ];
-    },
-    regex(name) {
-      return [
-        `"${name}" _ v:RegularExpression { return { constraint: '${name}', type: 'regex', value: v } }`
-      ];
+  property({ multi, name, operations, type }) {
+    if (operations && operations.length > 0) {
+      // order by length -- longest first
+      operations.sort((l, r) => r.length - l.length);
+      const ops = operations.map(JSON.stringify).join(' / ');
+
+      if (multi) {
+        return [
+          `"${name}" _ heado:$(${ops}) _ head:${type} tail:(_ "and" _ nexto:$(${ops}) _ next:${type} { return { property: '${name}', operation: nexto, value: next } })* _ { return [{ property: '${name}', operation: heado, value: head }].concat(tail).reduce((a, b) => a.concat(b), []) }`
+        ];
+      } else {
+        return [
+          `"${name}" _ o:${ops} _ v:${type} { return { property: '${name}', operation: o, value: v } }`
+        ];
+      }
+    } else {
+      if (multi) {
+        return [
+          `"${name}" _ head:${type} tail:(_ "and" _ next:${type} { return { property: '${name}', value: next } })* _ { return [{ property: '${name}', value: head }].concat(tail).reduce((a, b) => a.concat(b), []) }`
+        ];
+      } else {
+        return [
+          `"${name}" _ v:${type} { return { property: '${name}', value: v } }`
+        ];
+      }
     }
   }
 }
@@ -69,30 +50,24 @@ Properties ${generate.recursive('Property')}
 Property ${generate.rule(config.dataTypes.map(({ name }) => `${name}Property`))}
 `);
 
-for (let { name, constraints = [], properties = [] } of config.dataTypes) {
+for (let { name, properties = [] } of config.dataTypes) {
   const rules = [
     `id:Identifier _ "${name}" _ "{" _ "}"  { return { name: id, dataType: '${name}', rules: [] } }`,
     `id:Identifier _ "${name}"  { return { name: id, dataType: '${name}', rules: [] } }`
   ];
 
-  if (constraints.length > 0 || properties.length > 0) {
+  if (properties.length > 0) {
     rules.unshift(
       `id:Identifier _ "${name}" _ "{" _ rules:${name}Rules _ "}"  { return { name: id, dataType: '${name}', rules: rules } }`
     );
+
+    parts.push(`${name}Rules ${generate.recursive(`${name}Rule`)}`);
+
+    const p = properties.reduce((arr, prop) => arr.concat(generate.property(prop)), []);
+    parts.push(`${name}Rule ${generate.rule(p)}`);
   }
 
   parts.push(`${name}Property ${generate.rule(rules)}`);
-
-  if (constraints.length > 0 || properties.length > 0) {
-    parts.push(`${name}Rules ${generate.recursive(`${name}Rule`)}`);
-
-    const p = [
-      ...properties.reduce((arr, { name, type }) => arr.concat(generate.properties[type](name)), []),
-      ...constraints.reduce((arr, { name, type }) => arr.concat(generate.constraints[type](name)), [])
-    ];
-
-    parts.push(`${name}Rule ${generate.rule(p)}`);
-  }
 }
 
 parts.push(`
@@ -105,6 +80,7 @@ Boolean
 
 String
   = '"' str:$[^"]* '"' { return str }
+  / "'" str:$[^']* "'" { return str }
 
 Integer
   = [0-9]+ { return parseInt(text(), 10) }

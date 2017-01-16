@@ -1,22 +1,13 @@
-function defaultProp(type) {
-  return {
-    name: 'default',
-    type
-  };
-}
-
-const isRequired = {
-  name: 'required',
-  type: 'boolean'
-};
-
 export default {
   dataTypes: [{
     name: 'Boolean',
-    properties: [
-      isRequired,
-      defaultProp('boolean')
-    ]
+    properties: [{
+      name: 'required',
+      type: 'Boolean'
+    }, {
+      name: 'default',
+      type: 'Boolean'
+    }]
   }, {
   //   name: 'Date',
   //   properties: [
@@ -29,25 +20,48 @@ export default {
   //   }]
   // }, {
     name: 'String',
-    properties: [
-      isRequired,
-      defaultProp('string'),
-    {
+    properties: [{
+      name: 'required',
+      type: 'Boolean'
+    }, {
+      name: 'default',
+      type: 'String'
+    }, {
       name: 'contains',
-      type: 'string'
+      type: 'String',
+      multi: true
     }, {
       name: 'matches',
-      type: 'regex'
-    }],
-    constraints: [{
+      type: 'RegularExpression',
+      multi: true
+    }, {
       name: 'length',
-      type: 'integer'
+      type: 'Integer',
+      operations: [
+        '==',
+        '<',
+        '<=',
+        '>',
+        '>='
+      ],
+      multi: true
     }]
   }, {
     name: 'Email',
-    properties: [
-      isRequired,
-      defaultProp('string')
-    ]
+    properties: [{
+      name: 'required',
+      type: 'Boolean'
+    }, {
+      name: 'default',
+      type: 'String'
+    }, {
+      name: 'contains',
+      type: 'String',
+      multi: true
+    }, {
+      name: 'matches',
+      type: 'RegularExpression',
+      multi: true
+    }]
   }]
 };

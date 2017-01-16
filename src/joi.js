@@ -4,7 +4,7 @@ const joi = Joi.extend({
   name: 'string',
   base: Joi.string(),
   language: {
-    contains: 'needs to contain {{q}}'
+    contains: 'must contain {{q}}'
   },
   rules: [{
     name: 'contains',
@@ -13,7 +13,7 @@ const joi = Joi.extend({
     },
     validate(params, value, state, options) {
       if (value.indexOf(params.q) === -1) {
-        return this.createError('string.contains', value, state, options);
+        return this.createError('string.contains', { value, q: params.q }, state, options);
       }
 
       return value;
